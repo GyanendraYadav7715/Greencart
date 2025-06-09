@@ -41,6 +41,9 @@ if (process.env.NODE_ENV !== "production") {
 await connectiontoMogodbcluster();
 await conncectCloudinary();
 
+app.get("/", (req, res) => {
+    res.send("Api is working")
+})
 app.use("/api/user", userRoutes)
 app.use("/api/seller", sellerRoutes);
 app.use("/api/product", productRoutes);
