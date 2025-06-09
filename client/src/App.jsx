@@ -13,18 +13,22 @@ import AddAddress from "./pages/AddAddress";
 import MyOrders from "./pages/MyOrders";
 import SellerLogin from "./components/seller/SellerLogin";
 import SellerLayout from "./pages/seller/SellerLayout";
-import AddProduct from "./pages/seller/AddProduct"
-import ProductList from "./pages/seller/ProductList"
-import Orders from "./pages/seller/Orders"
+import AddProduct from "./pages/seller/AddProduct";
+import ProductList from "./pages/seller/ProductList";
+import Orders from "./pages/seller/Orders";
 import Loading from "./components/Loading";
+import InstallPrompt from "./components/InstallPrompt"; // 👈 Import install prompt
+
 const App = () => {
   const isSellerPath = useLocation().pathname.includes("seller");
   const { showUserLogin, seller } = useAppContext();
+
   return (
     <div className="text-default min-h-screen text-gray-700 bg-white">
       {isSellerPath ? null : <Navbar />}
       {showUserLogin ? <Login /> : null}
       <Toaster />
+      <InstallPrompt /> {/* 👈 Show Install PWA popup */}
       <div
         className={`${isSellerPath ? "" : "px-6 md:px-16 lg:px-24 xl:px-32"}`}
       >
@@ -37,7 +41,6 @@ const App = () => {
           <Route path="/add-address" element={<AddAddress />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/loader" element={<Loading />} />
-
           <Route
             path="/seller"
             element={seller ? <SellerLayout /> : <SellerLogin />}
