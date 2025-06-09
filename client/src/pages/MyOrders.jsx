@@ -8,7 +8,7 @@ const MyOrders = () => {
 
   const fetchMyOrders = async () => {
     try {
-      if (!user || !user.id) {
+      if (!user || !user._id) {
         toast.error("User not logged in");
         return;
       }

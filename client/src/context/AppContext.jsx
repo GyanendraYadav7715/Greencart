@@ -39,16 +39,15 @@ export const AppContextProvider = ({ children }) => {
       console.log("User state updated:", user);
     }
   }, [user]);
-  
 
   const fetchSeller = async () => {
     try {
       const { data } = await axios.get("/api/seller/is-auth");
-      setSeller(data.success);
+      if (data.success) setSeller(true);
+      else setSeller(false);
     } catch (error) {
-      console.error("Error checking seller auth:", error);
+      console.error("Failed to verify seller status", error);
       setSeller(false);
-      toast.error("Failed to verify seller status");
     }
   };
 
@@ -146,7 +145,7 @@ export const AppContextProvider = ({ children }) => {
     getCartCount,
     getCartAmount,
     fetchProducts,
-    setCartItems
+    setCartItems,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

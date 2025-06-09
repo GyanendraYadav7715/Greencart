@@ -1,61 +1,65 @@
-import Order from "../models/Order.js"
-import Product from "../models/Product.js"
-import User from "../models/User.js"
-import stripe from "stripe"
+import Order from "../models/Order.js";
+import Product from "../models/Product.js";
+import User from "../models/User.js";
+import Stripe from "stripe";
+
 export const placeorderCOD = async (req, res) => {
     try {
         const { userId, items, address } = req.body;
         if (!address || items.length === 0) {
             return res.json({
                 success: false,
-                message: "Invaild data"
-
-            })
+                message: "Invalid data",
+            });
         }
-        // calculate Amount Using items
 
-        let amount = await items.reduce(async (acc, item) => {
+        let amount = 0;
+        for (const item of items) {
             const product = await Product.findById(item.product);
-            return (await acc) + product.offerPrice * item.quantity
-        }, 0)
+            if (!product) {
+                return res.json({
+                    success: false,
+                    message: `Product with ID ${item.product} not found`,
+                });
+            }
+            amount += product.offerPrice * item.quantity;
+        }
 
-        //add tax charge (2%)
+        amount += Math.floor(amount * 0.02); // 2% tax
 
-        amount += Math.floor(amount * 0.02)
         await Order.create({
             userId,
             items,
             amount,
             address,
-            paymentType: "COD"
-
+            paymentType: "COD",
         });
+
         res.json({
             success: true,
-            message: "order place successfully"
-        })
-
+            message: "Order placed successfully",
+        });
     } catch (error) {
         res.json({
             success: false,
-            message: error.message
-        })
+            message: error.message,
+        });
     }
-}
-
+};
 
 export const getOrderByUserId = async (req, res) => {
     try {
         const { userId } = req.query;
-
         if (!userId) {
-            return res.status(400).json({ success: false, message: "Missing userId" });
+            return res.status(400).json({
+                success: false,
+                message: "Missing userId",
+            });
         }
 
         const order = await Order.find({
             userId,
-            $or: [{ paymentType: "COD" }
-                , { isPaid: true }]
+            $or: [{ paymentType: "COD" }, { isPaid: true }],
         })
             .populate("items.product address")
             .sort({ createdAt: -1 });
@@ -66,168 +70,155 @@ export const getOrderByUserId = async (req, res) => {
     }
 };
 
-
 export const getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find({
-            $or: [{ paymenType: "COD" }, { isPaid: false }]
-
-        }).populate("items.product address").sort({
-            createdAt: -1
+            $or: [{ paymentType: "COD" }, { isPaid: false }],
         })
-            ;
+            .populate("items.product address")
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
-            orders
-        })
-
-
+            orders,
+        });
     } catch (error) {
         res.json({
             success: false,
-            message: error.message
-        })
+            message: error.message,
+        });
     }
-}
+};
 
 export const placeorderStripe = async (req, res) => {
     try {
         const { userId, items, address } = req.body;
         const { origin } = req.headers;
+
         if (!address || items.length === 0) {
             return res.json({
                 success: false,
-                message: "Invaild data"
-
-            })
+                message: "Invalid data",
+            });
         }
-        let productData = [];
-        // calculate Amount Using items
 
-        let amount = await items.reduce(async (acc, item) => {
+        let productData = [];
+        let amount = 0;
+
+        for (const item of items) {
             const product = await Product.findById(item.product);
+            if (!product) {
+                return res.json({
+                    success: false,
+                    message: `Product with ID ${item.product} not found`,
+                });
+            }
+
             productData.push({
                 name: product.name,
                 price: product.offerPrice,
-                quantity: item.quantity
-            })
-            return (await acc) + product.offerPrice * item.quantity
-        }, 0)
+                quantity: item.quantity,
+            });
 
-        //add tax charge (2%)
+            amount += product.offerPrice * item.quantity;
+        }
 
-        amount += Math.floor(amount * 0.02)
+        amount += Math.floor(amount * 0.02); // 2% tax
+
         const order = await Order.create({
             userId,
             items,
             amount,
             address,
-            paymentType: "Online"
-
+            paymentType: "Online",
         });
 
-        //stripe gateway initalize
+        const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-        const stripeinstance = new stripe(process.env.STRIPE_SECRET_KEY);
-        //create line items for stripe
+        const line_items = productData.map((item) => ({
+            price_data: {
+                currency: "usd", // change to "inr" if needed
+                product_data: { name: item.name },
+                unit_amount: Math.floor(item.price + item.price * 0.02) * 100,
+            },
+            quantity: item.quantity,
+        }));
 
-        const line_items = productData.map((item) => {
-            return {
-                price_data: {
-                    currency: "usd",
-                    product_data: {
-                        name: item.name
-                    },
-                    unit_amount: Math.floor(item.price + item.price * 0.02) * 100
-                },
-                quantity: item.quantity,
-            }
-        })
-
-
-        //create session
-
-        const session = await stripeinstance.checkout.sessions.create({
+        const session = await stripeInstance.checkout.sessions.create({
             line_items,
             mode: "payment",
             success_url: `${origin}/loader/?next=my-orders`,
             cancel_url: `${origin}/cart`,
             metadata: {
                 orderId: order._id.toString(),
-                userId
-            }
-
-        })
+                userId,
+            },
+        });
 
         res.json({
             success: true,
             url: session.url,
-            message: "order place successfully"
-        })
-
+            message: "Order placed successfully",
+        });
     } catch (error) {
         res.json({
             success: false,
-            message: error.message
-        })
+            message: error.message,
+        });
     }
-}
+};
 
 export const stripeWebhooks = async (req, res) => {
-    const stripeinstance = new stripe(process.env.STRIPE_SECRET_KEY);
-    const sig = request.headers["stripe-signature"];
+    const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const sig = req.headers["stripe-signature"];
     let event;
+
     try {
-        event = stripeinstance.webhooks.constructEvent(
+        event = stripeInstance.webhooks.constructEvent(
             req.body,
             sig,
             process.env.STRIPE_WEBHOOK_SECRET
-        )
+        );
     } catch (error) {
-        res.status(400).send(`Webhook erro ${error.message}`)
+        return res.status(400).send(`Webhook error: ${error.message}`);
     }
 
-    //handle the event
+    try {
+        switch (event.type) {
+            case "payment_intent_succeeded": {
+                const paymentIntent = event.data.object;
+                const paymentIntentId = paymentIntent.id;
 
-    switch (event.type) {
-        case "payment_intent_succeeded": {
-            const paymentIntent = event.data.object;
-            const paymentIntentId = paymentIntent.id;
+                const session = await stripeInstance.checkout.sessions.list({
+                    payment_intent: paymentIntentId,
+                });
 
-            const session = await stripeinstance.checkout.sessions.list({
-                payment_intent: paymentIntentId,
-            })
-            const { orderId, userId } = session.data[0].metadata;
-            //AMrk paymen tas paid
+                const { orderId, userId } = session.data[0].metadata;
 
-            await Order.findByIdAndUpdate(orderId, { isPaid: true })
-            //clear user cart
+                await Order.findByIdAndUpdate(orderId, { isPaid: true });
+                await User.findByIdAndUpdate(userId, { cartItems: {} });
+                break;
+            }
 
-            await User.findByIdAndUpdate(userId, { cartItems: {} })
-            break;
+            case "payment_intent_failed": {
+                const paymentIntent = event.data.object;
+                const paymentIntentId = paymentIntent.id;
+
+                const session = await stripeInstance.checkout.sessions.list({
+                    payment_intent: paymentIntentId,
+                });
+
+                const { orderId } = session.data[0].metadata;
+                await Order.findByIdAndDelete(orderId);
+                break;
+            }
+
+            default:
+                console.error(`Unhandled event type ${event.type}`);
         }
 
-            
-
-        case "payment_intent_failed": {
-            const paymentIntent = event.data.object;
-            const paymentIntentId = paymentIntent.id;
-
-            const session = await stripeinstance.checkout.sessions.list({
-                payment_intent: paymentIntentId,
-            })
-            const { orderId, userId } = session.data[0].metadata;
-            await Order.findByIdAndDelete(orderId);
-            break;
-        }
-           
-        default:
-            console.error(`unhandle event type ${event.type}`)
-            break;
+        res.json({ received: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
-    response.json({
-        recived:true
-    })
-
-}
+};

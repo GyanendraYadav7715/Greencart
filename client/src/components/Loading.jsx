@@ -2,7 +2,7 @@
 import { useAppContext } from "../context/AppContext"
 import { useEffect } from "react";
 const Loading = () => {
-    const { naviagte } = useAppContext();
+    const { navigate } = useAppContext();
     const { search } = useLocation();
     const query = new URLSearchParams(search);
     const nextUrl = query.get('next');
@@ -10,7 +10,7 @@ const Loading = () => {
     useEffect(() => {
         if (nextUrl) {
             setTimeout(() => {
-              naviagte(`/${nextUrl}`)  
+              navigate(`/${nextUrl}`);  
             },5000)
         }
     },[nextUrl])
