@@ -15,7 +15,7 @@ const MyOrders = () => {
 
       // ✅ Await the request and destructure correctly
       const response = await axios.get("/api/order/user", {
-        params: { userId: user.id },
+        params: { userId: user._id },
       });
       const data = response.data;
 
