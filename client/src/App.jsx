@@ -18,6 +18,8 @@ import ProductList from "./pages/seller/ProductList";
 import Orders from "./pages/seller/Orders";
 import Loading from "./components/Loading";
 import InstallPrompt from "./components/InstallPrompt"; // 👈 Import install prompt
+import OfferBanner from "./components/OfferBanner";
+import ContactUs from "./pages/ContactUs";
 
 const App = () => {
   const isSellerPath = useLocation().pathname.includes("seller");
@@ -25,6 +27,7 @@ const App = () => {
 
   return (
     <div className="text-default min-h-screen text-gray-700 bg-white">
+      {isSellerPath ? null : <OfferBanner />}
       {isSellerPath ? null : <Navbar />}
       {showUserLogin ? <Login /> : null}
       <Toaster />
@@ -38,6 +41,8 @@ const App = () => {
           <Route path="/products/:category" element={<ProductCategory />} />
           <Route path="/products/:category/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/contact" element={<ContactUs />} />
+
           <Route path="/add-address" element={<AddAddress />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/loader" element={<Loading />} />

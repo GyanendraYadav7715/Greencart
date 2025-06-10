@@ -1,7 +1,7 @@
 import { assets } from "../assets/assets";
 import { useAppContext } from "../context/AppContext";
 import useCartLogic from "../hooks/useCartLogic"; // 👈 Import your custom hook
-
+import NotFound from "../components/NotFound"
 const Cart = () => {
   const {
     removeFromCart,
@@ -212,7 +212,7 @@ const Cart = () => {
         </button>
       </div>
     </div>
-  ) : null;
+  ) : <NotFound/>;
 };
 
 export default Cart;
