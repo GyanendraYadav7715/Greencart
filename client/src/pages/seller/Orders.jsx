@@ -1,37 +1,8 @@
-import { useEffect, useState } from "react";
-import { useAppContext } from "../../context/AppContext";
 import { assets } from "../../assets/assets";
-import toast from "react-hot-toast";
+import useSellerOrders from "../../hooks/useSellerOrders"; // 👈
 
 const Orders = () => {
-  const { currency, axios } = useAppContext();
-  const [orders, setOrders] = useState([]);
-
-  const fetchOrders = async () => {
-    try {
-      // append timestamp to bypass caching
-      const response = await axios.get("/api/order/seller", {
-        params: { ts: Date.now() },
-        headers: { "Cache-Control": "no-cache" },
-      });
-      const data = response.data;
-      if (data.success) {
-        setOrders(data.orders);
-      } else {
-        toast.error(data.message || "Failed to fetch orders");
-      }
-    } catch (error) {
-      toast.error(
-        error?.response?.data?.message ||
-          error.message ||
-          "Error fetching orders"
-      );
-    }
-  };
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const { orders, currency } = useSellerOrders();
 
   return (
     <div className="no-scrollbar flex-1 h-[95vh] overflow-y-scroll">

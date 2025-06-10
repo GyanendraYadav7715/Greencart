@@ -1,111 +1,30 @@
-import { useEffect, useState } from "react";
-import { useAppContext } from "../context/AppContext";
 import { assets } from "../assets/assets";
-import toast from "react-hot-toast";
+import { useAppContext } from "../context/AppContext";
+import useCartLogic from "../hooks/useCartLogic"; // 👈 Import your custom hook
 
 const Cart = () => {
   const {
-    products,
-    currency,
-    cartItems,
-    setCartItems,
     removeFromCart,
-    getCartCount,
     updateCartItem,
-    navigate,
+    getCartCount,
     getCartAmount,
-    user,
-    axios,
+    navigate,
   } = useAppContext();
 
-  const [cartArray, setCartArray] = useState([]);
-  const [addresses, setAddresses] = useState([]);
-  const [showAddress, setShowAddress] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState(null);
-  const [paymentOption, setPaymentOption] = useState("COD");
+  const {
+    cartArray,
+    addresses,
+    showAddress,
+    setShowAddress,
+    selectedAddress,
+    setSelectedAddress,
+    paymentOption,
+    setPaymentOption,
+    placeOrder,
+    currency,
+  } = useCartLogic();
 
-  const getCart = () => {
-    const tempArray = [];
-    for (const key in cartItems) {
-      const product = products.find((item) => item._id === key);
-      if (product && product.offerPrice != null) {
-        tempArray.push({ ...product, quantity: cartItems[key] });
-      } else {
-        console.warn(`Product not found or invalid for cart item key: ${key}`);
-      }
-    }
-    setCartArray(tempArray);
-  };
-
-  const getUserAddress = async () => {
-    try {
-      const { data } = await axios.get(`/api/addresses/get?userId=${user._id}`);
-      if (data.success) {
-        setAddresses(data.addresses);
-        if (data.addresses.length > 0) {
-          setSelectedAddress(data.addresses[0]);
-        }
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error(error.message);
-    }
-  };
-
-  const placeOrder = async () => {
-    try {
-      if (!selectedAddress) return toast.error("Please select an address");
-
-      if (paymentOption === "COD") {
-        const { data } = await axios.post("/api/order/cod", {
-          userId: user._id,
-          items: cartArray.map((item) => ({
-            product: item._id,
-            quantity: item.quantity,
-          })),
-          address: selectedAddress._id,
-        });
-
-        if (data.success) {
-          toast.success(data.message);
-          setCartItems({});
-          navigate("/my-orders");
-        } else {
-          toast.error(data.message);
-        }
-      } else {
-        //place orde with stripe
-        const { data } = await axios.post("/api/order/stripe", {
-          userId: user._id,
-          items: cartArray.map((item) => ({
-            product: item._id,
-            quantity: item.quantity,
-          })),
-          address: selectedAddress._id,
-        });
-
-        if (data.success) {
-          window.location.replace(data.url)
-          
-        } else {
-          toast.error(data.message);
-        }
-      }
-    } catch (error) {
-      toast.error(error.message);
-    }
-  };
-
-  useEffect(() => {
-    if (products.length > 0 && cartItems) getCart();
-  }, [products, cartItems]);
-
-  useEffect(() => {
-    if (user) getUserAddress();
-  }, [user]);
-
-  return products.length > 0 && cartItems ? (
+  return cartArray.length > 0 ? (
     <div className="flex flex-col md:flex-row py-16 max-w-6xl w-full px-6 mx-auto">
       <div className="flex-1 max-w-4xl">
         <h1 className="text-3xl font-medium mb-6">
@@ -171,9 +90,7 @@ const Cart = () => {
 
             <p className="text-center">
               {currency}
-              {product.offerPrice != null
-                ? (product.offerPrice * product.quantity).toFixed(2)
-                : "N/A"}
+              {(product.offerPrice * product.quantity).toFixed(2)}
             </p>
 
             <button

@@ -6,9 +6,8 @@ const ProductCard = ({ product }) => {
     currency,
     cartItems,
     addToCart,
-    //updateCartItem,
     removeFromCart,
-    navigate, // remove if not used
+    navigate, 
   } = useAppContext();
 
   if (!product) return null;
