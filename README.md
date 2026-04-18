@@ -228,7 +228,7 @@ Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more informati
 ## 👨‍💻 Author
 
 **Gyanendra Yadav**  
-🔗 [GitHub](https://github.com/GyanendraYadav7715) • 💼 Java Backend Developer | MERN Enthusiast
+🔗 [GitHub](https://github.com/GyanendraYadav7715) • 💼 Java Backend Developer | Microservices 
 
 ---
 
